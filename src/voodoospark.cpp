@@ -38,8 +38,13 @@
 // Port = 0xbeef
 #define PORT 48879
 
+//"255.255.255.255"
+uint8_t broadcast[] = { 255, 255, 255, 255};
+IPAddress broadcast_address( broadcast );
+
 TCPServer server = TCPServer(PORT);
 TCPClient client;
+UDP Udp;
 bool isConnected = false;
 byte reading[20];
 byte previous[20];
@@ -120,10 +125,10 @@ void reset() {
 
 char myIpString[24];
 
-
 void setup() {
 
   server.begin();
+  // Udp.begin(PORT);
   netapp_ipconfig(&ip_config);
 
   #ifdef DEBUG
@@ -133,7 +138,22 @@ void setup() {
   IPAddress myIp = Network.localIP();
   sprintf(myIpString, "%d.%d.%d.%d:%d", myIp[0], myIp[1], myIp[2], myIp[3], PORT);
   Spark.variable("endpoint", myIpString, STRING);
+  sendHello();
+}
 
+void sendHello() {
+  Udp.beginPacket(broadcast_address, PORT);
+  Udp.write("HELLO\n");
+  String myID = Spark.deviceID();
+
+  int idLength = myID.length() + 1;
+  char charID[idLength];
+  myID.toCharArray(charID, idLength);
+
+  Udp.write(charID);
+  Udp.write("\n");
+  Udp.write(myIpString);
+  Udp.endPacket();
 }
 
 // table of action codes
